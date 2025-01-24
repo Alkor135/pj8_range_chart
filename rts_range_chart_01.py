@@ -4,7 +4,6 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 import finplot as fplt
-from PyQt5.QtWidgets import QApplication
 
 fplt.display_timezone = timezone.utc  # Настройка тайм зоны, чтобы не было смещения времени
 
@@ -155,17 +154,18 @@ def volume_stops(df):
 
 
 if __name__ == "__main__":
-    start_time = time()  # Время начала запуска скрипта
+    # start_time = time()  # Время начала запуска скрипта
 
     directory = Path(r'c:\data_quote\data_finam_RTS_tick_zip')
     range_bar_in_day = 300
-    range_size_lst = [100, 150, 200, 250, 300, 350, 400, 450, 500]
+    range_size_lst = [150, 200, 250, 300, 350, 400, 450]
     alpha = 0.4
 
     files = list(directory.glob('*.zip'))
 
     # Перебираем файлы zip перекрывающимися парами файлов
     for file_1, file_2 in zip(files, files[1:]):
+        start_time = time()  # Время начала запуска скрипта
         # Чтение тиков в DF'ы из zip файлов
         df_tick_1 = pd.read_csv(file_1, compression='zip', parse_dates=['datetime'])
         df_tick_2 = pd.read_csv(file_2, compression='zip', parse_dates=['datetime'])
@@ -177,8 +177,6 @@ if __name__ == "__main__":
             # Заполняем словарь размерности, количеством баров
             range_size_dic[range_size] = len(df_range_1)
 
-        # print(file_1, file_2)
-        # print(range_size_dic)
         # Вычисление размерности range баров к заданному количеству
         closest_key = min(range_size_dic, key=lambda k: abs(range_size_dic[k] - 300))
         # print(closest_key)
@@ -209,40 +207,51 @@ if __name__ == "__main__":
         # print(df)
         # break
 
-        print(df.dtypes)  # Вывод типов данных
-        print(df['alf'].head())  # Посмотрите на первые значения в колонке alf
+        # print(df.dtypes)  # Вывод типов данных
+        # print(df['alf'].head())  # Посмотрите на первые значения в колонке alf
+
+        df = df.set_index('datetime')
 
         # create two axes
-        ax = fplt.create_plot('RTS', rows=1)
+        ax = fplt.create_plot(f'RTS range{closest_key}', rows=1)
         ax.set_visible(xgrid=True, ygrid=True)
 
         # plot candle sticks
-        # candles = df[['open', 'close', 'high', 'low']]
-        candles = df[['datetime', 'open', 'close', 'high', 'low']]
+        candles = df[['open', 'close', 'high', 'low']]
+        # candles = df[['datetime', 'open', 'close', 'high', 'low']]
         fplt.candlestick_ochl(candles, ax=ax)
 
         # overlay volume on the top plot
-        # volumes = df[['open','close','volume']]
-        volumes = df[['datetime', 'open', 'close', 'volume']]
+        volumes = df[['open','close','volume']]
+        # volumes = df[['datetime', 'open', 'close', 'volume']]
         fplt.volume_ocv(volumes, ax=ax.overlay())
 
         # put an ALF on the close price
-        fplt.plot(df['datetime'], df['alf'], legend=f'ALF-{alpha}')  # ax=ax,
+        fplt.plot(df['alf'], ax=ax, legend=f'ALF-{alpha}')  # ax=ax,
+        # fplt.plot(df['datetime'], df['alf'], legend=f'ALF-{alpha}')  # ax=ax,
 
         # Volume Stops
-        fplt.plot(df['datetime'], df['long1'], legend='Long 1 Max volume', style='o', color='#00f')
+        fplt.plot(df['long1'], legend='Long 1 Max volume', style='o', color='#00f')
+        # fplt.plot(df['datetime'], df['long1'], legend='Long 1 Max volume', style='o', color='#00f')
         # fplt.plot(df['datetime'], df['long2'], legend='Long 2 Min Volume', style='o', color='#f00')
         # fplt.plot(df['datetime'], df['long2'], legend='Long 2 Min Volume', style='o', color='#dc143c')
-        fplt.plot(df['datetime'], df['long2'], legend='Long 2 Min Volume', style='o', color='#006400')
-        fplt.plot(df['datetime'], df['short1'], legend='Short 1 Max volume', style='o', color='#00f')
-        fplt.plot(df['datetime'], df['short2'], legend='Short 2 Min Volume', style='o', color='#006400')
+        fplt.plot(df['long2'], legend='Long 2 Min Volume', style='o', color='#006400')
+        # fplt.plot(df['datetime'], df['long2'], legend='Long 2 Min Volume', style='o', color='#006400')
+        fplt.plot(df['short1'], legend='Short 1 Max volume', style='o', color='#00f')
+        # fplt.plot(df['datetime'], df['short1'], legend='Short 1 Max volume', style='o', color='#00f')
+        fplt.plot(df['short2'], legend='Short 2 Min Volume', style='o', color='#006400')
+        # fplt.plot(df['datetime'], df['short2'], legend='Short 2 Min Volume', style='o', color='#006400')
 
         fplt.show()
 
         # # Сохранение графика в файл
+        fplt.screenshot(open(fr'chart\{file_name}.png', 'wb'))
         # ax.vb.win.grab().save(fr'chart\{file_name}.png')
+
+        print(fr'chart\{file_name}.png')
+        print(f'Скрипт выполнен за {(time() - start_time):.2f} с')
 
     # print(files)
 
     # print(df)
-    print(f'Скрипт выполнен за {(time() - start_time):.2f} с')
+    # print(f'Скрипт выполнен за {(time() - start_time):.2f} с')
